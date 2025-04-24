@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "772588796529",
+    "firebase_url": "https://musicplayer-a93da-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "musicplayer-a93da",
+    "storage_bucket": "musicplayer-a93da.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:772588796529:android:166e8b1c768cba4a66f9d0",
+        "android_client_info": {
+          "package_name": "com.ecthehunter.mynewproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwTfJzH6RW9tQgMGeNiJ1SeE6Plobcmuw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
