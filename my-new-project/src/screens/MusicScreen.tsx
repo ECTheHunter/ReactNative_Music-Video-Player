@@ -6,8 +6,6 @@ import * as MediaLibrary from "expo-media-library";
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from "expo-av";
 import { trackEvent } from "@aptabase/react-native";
 import database from '@react-native-firebase/database';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Modal, TextInput } from 'react-native';
 
 
 type Song = {
@@ -26,11 +24,7 @@ export default function MusicScreen() {
   const [currentTime, setCurrentTime] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [repeatMode, setRepeatMode] = useState(false); // Add state to handle repeat mode
-  const [selectedPlaylist, setSelectedPlaylist] = useState("Default Playlist");
-  const [isPlaylistMenuVisible, setIsPlaylistMenuVisible] = useState(false);
-  const [playlists, setPlaylists] = useState<string[]>(['Default Playlist']);
-  const [isNewPlaylistModalVisible, setIsNewPlaylistModalVisible] = useState(false);
-  const [newPlaylistName, setNewPlaylistName] = useState('');
+
   const scrollViewRef = useRef<ScrollView | null>(null);
   const playbackRef = useRef<Audio.Sound | null>(null);
   const nextSongRef = useRef<() => void>(() => { });
@@ -45,74 +39,24 @@ export default function MusicScreen() {
     const snapshot = await database().ref("music").once("value");
     const data = snapshot.val();
     if (!data) return [];
-
+  
     return Object.entries(data)
       .filter(([, val]) => val != null)
       .map(([key, val]) => ({
-        id: key,
+        id:    key,
         title: (val as any).title || "Untitled",
-        uri: (val as any).uri || "",
+        uri:   (val as any).uri   || "",
       }));
   };
-  const togglePlaylistMenu = () => {
-    setIsPlaylistMenuVisible((prev) => !prev);
-  };
-
-  const handleSelectPlaylist = (playlistName: string) => {
-    if (playlistName === 'Create New Playlist') {
-      setIsNewPlaylistModalVisible(true);
-    } else {
-      setSelectedPlaylist(playlistName);
-      setIsPlaylistMenuVisible(false);
-    }
-  };
-  const handleCreatePlaylist = () => {
-    const trimmedName = newPlaylistName.trim();
-    if (!trimmedName) return; // Ignore empty names
-
-    if (playlists.includes(trimmedName)) {
-      alert('A playlist with that name already exists.');
-      return;
-    }
-
-    const updatedPlaylists = [...playlists, trimmedName];
-    setPlaylists(updatedPlaylists);
-    savePlaylists(updatedPlaylists);
-    setSelectedPlaylist(trimmedName);
-    setNewPlaylistName('');
-    setIsNewPlaylistModalVisible(false);
-    setIsPlaylistMenuVisible(false);
-  };
-
-
-  useEffect(() => {
-    loadPlaylists();
-  }, []);
-
-  const loadPlaylists = async () => {
-    try {
-      const storedPlaylists = await AsyncStorage.getItem('playlists');
-      if (storedPlaylists) {
-        setPlaylists(JSON.parse(storedPlaylists));
-      }
-    } catch (error) {
-      console.error('Error loading playlists:', error);
-    }
-  };
-  const savePlaylists = async (updatedPlaylists: string[]) => {
-    try {
-      await AsyncStorage.setItem('playlists', JSON.stringify(updatedPlaylists));
-    } catch (error) {
-      console.error('Error saving playlists:', error);
-    }
-  };
-
+  
+  
+  
   useEffect(() => {
     // Initialize audio mode and permissions
     initializeAudio();
-
+    
     const subscription = AppState.addEventListener('change', handleAppStateChange);
-
+    
     return () => {
       // Cleanup on unmount
       releasePlayer();
@@ -132,7 +76,7 @@ export default function MusicScreen() {
       console.error('Error initializing audio:', error);
     }
   };
-  const handleAppStateChange = async (nextAppState: any) => {
+  const handleAppStateChange = async (nextAppState:any) => {
     if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
       // App coming to foreground
       if (selectedSong && sound) {
@@ -163,10 +107,10 @@ export default function MusicScreen() {
   }, []);
   useEffect(() => {
     if (songs.length === 0 || !selectedSong) return; // Ensure songs are loaded before assigning
-
+  
     nextSongRef.current = repeatMode ? handleReset : handleNext;
   }, [repeatMode, songs, selectedSong]);
-
+  
   useEffect(() => {
     return () => {
       if (sound) {
@@ -187,7 +131,7 @@ export default function MusicScreen() {
     const { status } = await MediaLibrary.requestPermissionsAsync();
     if (status === "granted") {
       loadSongs();
-
+      
     } else {
       console.error("Permission denied for media library.");
     }
@@ -200,26 +144,26 @@ export default function MusicScreen() {
         mediaType: MediaLibrary.MediaType.audio,
         first: 1000,
       });
-
+      
       const localSongs: Song[] = media.assets.map((item) => ({
         id: `local-${item.id}`,
         title: item.filename,
         uri: item.uri,
       }));
-
+   
       const firebaseSongs = await fetchFirebaseSongs();
 
       const combinedSongs = [...firebaseSongs, ...localSongs];
-
+  
       setSongs(combinedSongs);
       setSelectedSong(null);
-
+  
 
     } catch (error) {
       console.error("Error loading songs:", error);
     }
   };
-
+  
 
   const playSong = async (song: Song) => {
     try {
@@ -227,7 +171,7 @@ export default function MusicScreen() {
         await sound.stopAsync();
         await sound.unloadAsync();
       }
-
+      
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: song.uri },
         { shouldPlay: true }
@@ -313,7 +257,7 @@ export default function MusicScreen() {
     }
     setIsSeeking(false);
   };
-
+  
 
   const togglePlayPause = async () => {
     if (!sound) return;
@@ -376,14 +320,14 @@ export default function MusicScreen() {
             <Ionicons name="play-skip-back" size={36} color="#333" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={togglePlayPause}
+          <TouchableOpacity 
+            onPress={togglePlayPause} 
             style={styles.playButton}
           >
-            <Ionicons
-              name={isPlaying ? "pause" : "play"}
-              size={36}
-              color="#FFF"
+            <Ionicons 
+              name={isPlaying ? "pause" : "play"} 
+              size={36} 
+              color="#FFF" 
             />
           </TouchableOpacity>
 
@@ -398,51 +342,23 @@ export default function MusicScreen() {
       </View>
 
       {/* Songs List */}
-      {/* Playlist Selector */}
-      <View style={styles.playlistContainer}>
-        <TouchableOpacity onPress={togglePlaylistMenu} style={styles.playlistButton}>
-          <Text style={styles.playlistButtonText}>{selectedPlaylist}</Text>
-          <Ionicons name="chevron-down" size={20} color="#4A90E2" />
-        </TouchableOpacity>
-
-        {isPlaylistMenuVisible && (
-          <View style={styles.playlistMenu}>
-            {playlists.map((pl) => (
-              <TouchableOpacity
-                key={pl}
-                style={styles.playlistMenuItem}
-                onPress={() => handleSelectPlaylist(pl)}
-              >
-                <Text style={styles.playlistMenuText}>{pl}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.playlistMenuItem}
-              onPress={() => handleSelectPlaylist("Create New Playlist")}
-            >
-              <Text style={styles.playlistMenuText}>Create New Playlist</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
       <FlatList
         data={songs}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => playSong(item)}
+          <TouchableOpacity 
+            onPress={() => playSong(item)} 
             style={[
               styles.songItem,
               selectedSong?.id === item.id && styles.selectedSongItem
             ]}
           >
-            <Ionicons
-              name={selectedSong?.id === item.id ? "musical-notes" : "musical-note"}
-              size={24}
-              color={selectedSong?.id === item.id ? "#4A90E2" : "#666"}
+            <Ionicons 
+              name={selectedSong?.id === item.id ? "musical-notes" : "musical-note"} 
+              size={24} 
+              color={selectedSong?.id === item.id ? "#4A90E2" : "#666"} 
             />
-            <Text
+            <Text 
               style={[
                 styles.songText,
                 selectedSong?.id === item.id && styles.selectedSongText
@@ -455,39 +371,6 @@ export default function MusicScreen() {
         )}
         contentContainerStyle={styles.listContainer}
       />
-      <Modal
-        visible={isNewPlaylistModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsNewPlaylistModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New Playlist</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Playlist name"
-              value={newPlaylistName}
-              onChangeText={setNewPlaylistName}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={() => setIsNewPlaylistModalVisible(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCreate]}
-                onPress={handleCreatePlaylist}
-              >
-                <Text style={[styles.modalButtonText, { color: '#FFF' }]}>Create</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
     </View>
   );
 }
@@ -497,48 +380,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFF",
   },
-  playlistContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEE",
-    backgroundColor: "#F9F9F9",
-  },
-
-  playlistButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 10,
-    backgroundColor: "#EAF1FF",
-    borderRadius: 8,
-  },
-
-  playlistButtonText: {
-    color: "#4A90E2",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  playlistMenu: {
-    marginTop: 5,
-    backgroundColor: "#FFF",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#DDD",
-    overflow: "hidden",
-  },
-
-  playlistMenuItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-  },
-
-  playlistMenuText: {
-    fontSize: 14,
-    color: "#333",
-  },
-
   playerContainer: {
     padding: 20,
     borderBottomWidth: 1,
@@ -609,55 +450,4 @@ const styles = StyleSheet.create({
     color: "#4A90E2",
     fontWeight: "600",
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  modalContent: {
-    width: '80%',
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    padding: 20,
-    elevation: 5,
-  },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-
-  modalInput: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 15,
-  },
-
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-
-  modalButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 6,
-    backgroundColor: '#EEE',
-    marginLeft: 10,
-  },
-
-  modalButtonCreate: {
-    backgroundColor: '#4A90E2',
-  },
-
-  modalButtonText: {
-    fontSize: 14,
-    color: '#333',
-  },
-
 });
