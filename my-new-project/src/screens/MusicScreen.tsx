@@ -40,12 +40,6 @@ export default function MusicScreen() {
   const playbackRef = useRef<Audio.Sound | null>(null);
   const nextSongRef = useRef<() => void>(() => { });
   const appState = useRef(AppState.currentState);
-  Audio.setAudioModeAsync({
-    staysActiveInBackground: true,
-    playsInSilentModeIOS: true,
-    interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-    interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-  });
   const fetchFirebaseSongs = async (): Promise<Song[]> => {
     const snapshot = await database().ref("music").once("value");
     const data = snapshot.val();
@@ -61,14 +55,17 @@ export default function MusicScreen() {
   };
 
   useEffect(() => {
-    if (selectedPlaylist) {
-      // Filter songs based on the selected playlist
+    // Only re-filter when songs or playlists change
+    const filterSongs = () => {
       const filteredSongs = songs.filter(song =>
         playlists[selectedPlaylist]?.includes(song.id)
       );
       setFilteredSongs(filteredSongs);
-    }
+    };
+
+    filterSongs();
   }, [selectedPlaylist, playlists, songs]);
+
 
   useEffect(() => {
     // Initialize audio mode and permissions
@@ -125,10 +122,10 @@ export default function MusicScreen() {
     requestPermissions();
   }, []);
   useEffect(() => {
-    if (songs.length === 0 || !selectedSong) return; // Ensure songs are loaded before assigning
+    if (filteredSongs.length === 0 || !selectedSong) return; // Ensure songs are loaded before assigning
 
     nextSongRef.current = repeatMode ? handleReset : handleNext;
-  }, [repeatMode, songs, selectedSong]);
+  }, [repeatMode, filteredSongs, selectedSong]);
 
   useEffect(() => {
     return () => {
@@ -237,27 +234,27 @@ export default function MusicScreen() {
   };
 
   const handleNext = async () => {
-    if (!selectedSong || songs.length === 0) return;
+    if (!selectedSong || filteredSongs.length === 0) return;
 
-    const currentIndex = songs.findIndex((song) => song.id === selectedSong.id);
-    const nextIndex = (currentIndex + 1) % songs.length;
-    const nextSong = songs[nextIndex];
+    const currentIndex = filteredSongs.findIndex((song) => song.id === selectedSong.id);
+    const nextIndex = (currentIndex + 1) % filteredSongs.length;
+    const nextSong = filteredSongs[nextIndex];
 
 
     await playSong(nextSong);
   };
 
   const handleShuffle = () => {
-    if (songs.length === 0) return;
-    const randomIndex = Math.floor(Math.random() * songs.length);
-    playSong(songs[randomIndex]);
+    if (filteredSongs.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * filteredSongs.length);
+    playSong(filteredSongs[randomIndex]);
   };
 
   const handleGoBack = () => {
-    if (!selectedSong || songs.length === 0) return;
-    const currentIndex = songs.findIndex((song) => song.id === selectedSong.id);
+    if (!selectedSong || filteredSongs.length === 0) return;
+    const currentIndex = filteredSongs.findIndex((song) => song.id === selectedSong.id);
     if (currentIndex > 0) {
-      playSong(songs[currentIndex - 1]);
+      playSong(filteredSongs[currentIndex - 1]);
     }
   };
 
