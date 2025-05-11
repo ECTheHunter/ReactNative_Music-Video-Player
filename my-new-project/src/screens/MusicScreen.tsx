@@ -6,7 +6,7 @@ import * as MediaLibrary from "expo-media-library";
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from "expo-av";
 import { trackEvent } from "@aptabase/react-native";
 import database from '@react-native-firebase/database';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 
 type Song = {
@@ -14,7 +14,7 @@ type Song = {
   title: string;
   uri: string;
 };
-
+type PlaylistMap = { [playlistName: string]: string[] };
 export default function MusicScreen() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
@@ -26,11 +26,14 @@ export default function MusicScreen() {
   const [isSeeking, setIsSeeking] = useState(false);
   const [repeatMode, setRepeatMode] = useState(false); // Add state to handle repeat mode
 
-  const [playlists, setPlaylists] = useState<string[]>(['Default Playlist']);
+
+
+  const [playlists, setPlaylists] = useState<PlaylistMap>({ 'Default Playlist': [] });
   const [selectedPlaylist, setSelectedPlaylist] = useState('Default Playlist');
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [filteredSongs, setFilteredSongs] = useState<Song[]>([]);
 
 
   const scrollViewRef = useRef<ScrollView | null>(null);
@@ -43,16 +46,6 @@ export default function MusicScreen() {
     interruptionModeIOS: InterruptionModeIOS.DoNotMix,
     interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
   });
-  const handleAddPlaylist = () => {
-    if (newPlaylistName.trim() === '') return;
-
-    const updatedPlaylists = [...playlists, newPlaylistName.trim()];
-    setPlaylists(updatedPlaylists);
-    setSelectedPlaylist(newPlaylistName.trim());
-    setNewPlaylistName('');
-    setIsCreatingPlaylist(false);
-    setDropdownVisible(false);
-  };
   const fetchFirebaseSongs = async (): Promise<Song[]> => {
     const snapshot = await database().ref("music").once("value");
     const data = snapshot.val();
@@ -67,10 +60,15 @@ export default function MusicScreen() {
       }));
   };
 
-  const handleSelectPlaylist = (playlistName: string) => {
-    setSelectedPlaylist(playlistName);
-    setDropdownVisible(false);
-  };
+  useEffect(() => {
+    if (selectedPlaylist) {
+      // Filter songs based on the selected playlist
+      const filteredSongs = songs.filter(song =>
+        playlists[selectedPlaylist]?.includes(song.id)
+      );
+      setFilteredSongs(filteredSongs);
+    }
+  }, [selectedPlaylist, playlists, songs]);
 
   useEffect(() => {
     // Initialize audio mode and permissions
@@ -177,6 +175,12 @@ export default function MusicScreen() {
       const combinedSongs = [...firebaseSongs, ...localSongs];
 
       setSongs(combinedSongs);
+      const allSongIds = combinedSongs.map(song => song.id);
+      setPlaylists(prev => ({
+        ...prev,
+        'Default Playlist': allSongIds,
+      }));
+
       setSelectedSong(null);
 
 
@@ -371,7 +375,7 @@ export default function MusicScreen() {
 
         {dropdownVisible && (
           <View style={styles.playlistDropdown}>
-            {playlists.map((playlist) => (
+            {Object.keys(playlists).map((playlist) => (
               <TouchableOpacity
                 key={playlist}
                 style={styles.playlistItem}
@@ -427,7 +431,11 @@ export default function MusicScreen() {
                 style={[styles.modalButton, { backgroundColor: '#4A90E2' }]}
                 onPress={() => {
                   if (newPlaylistName.trim() === '') return;
-                  const updatedPlaylists = [...playlists, newPlaylistName.trim()];
+                  const updatedPlaylists = {
+                    ...playlists,
+                    [newPlaylistName.trim()]: [], // new playlist with empty song list
+                  };
+
                   setPlaylists(updatedPlaylists);
                   setSelectedPlaylist(newPlaylistName.trim());
                   setNewPlaylistName('');
@@ -443,7 +451,7 @@ export default function MusicScreen() {
 
       {/* Songs List */}
       <FlatList
-        data={songs}
+        data={filteredSongs}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
