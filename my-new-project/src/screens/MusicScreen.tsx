@@ -475,6 +475,16 @@ export default function MusicScreen() {
             >
               {item.title}
             </Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.button}>
+                <Text style={styles.buttonText}>Add</Text>
+              </TouchableOpacity>
+              {selectedPlaylist !== 'Default Playlist' && (
+                <TouchableOpacity style={styles.button}>
+                  <Text style={styles.buttonText}>Remove</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.listContainer}
@@ -487,6 +497,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFF",
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  button: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginLeft: 10,
+    backgroundColor: '#4A90E2',
+    borderRadius: 6,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
