@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@aptabase/react-native": "^0.3.10",
+    "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/slider": "^4.5.6",
     "@react-native-firebase/app": "^18.5.0",
     "@react-native-firebase/database": "^18.5.0",
@@ -26,7 +27,6 @@
     "expo-video": "^2.0.6",
     "react": "18.3.1",
     "react-native": "0.76.7",
-    "react-native-reanimated": "2.15.0",  
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "^4.10.0"
   },
