@@ -36,10 +36,15 @@ export default function MusicScreen() {
   const [filteredSongs, setFilteredSongs] = useState<Song[]>([]);
 
 
+  const [isAddToPlaylistModalVisible, setIsAddToPlaylistModalVisible] = useState(false);
+  const [songToAdd, setSongToAdd] = useState<Song | null>(null);
+
   const scrollViewRef = useRef<ScrollView | null>(null);
   const playbackRef = useRef<Audio.Sound | null>(null);
   const nextSongRef = useRef<() => void>(() => { });
   const appState = useRef(AppState.currentState);
+
+
   const fetchFirebaseSongs = async (): Promise<Song[]> => {
     const snapshot = await database().ref("music").once("value");
     const data = snapshot.val();
@@ -53,7 +58,14 @@ export default function MusicScreen() {
         uri: (val as any).uri || "",
       }));
   };
+  const handleRemoveSongFromPlaylist = (songId: string) => {
+    if (!selectedPlaylist) return; // make sure a playlist is selected
 
+    setPlaylists((prev) => ({
+      ...prev,
+      [selectedPlaylist]: prev[selectedPlaylist].filter((id) => id !== songId),
+    }));
+  };
   useEffect(() => {
     // Only re-filter when songs or playlists change
     const filterSongs = () => {
@@ -397,6 +409,59 @@ export default function MusicScreen() {
           </View>
         )}
       </View>
+
+
+      {/* Songs List */}
+      <FlatList
+        data={filteredSongs}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => playSong(item)}
+            style={[
+              styles.songItem,
+              selectedSong?.id === item.id && styles.selectedSongItem
+            ]}
+          >
+            <Ionicons
+              name={selectedSong?.id === item.id ? "musical-notes" : "musical-note"}
+              size={24}
+              color={selectedSong?.id === item.id ? "#4A90E2" : "#666"}
+            />
+            <Text
+              style={[
+                styles.songText,
+                selectedSong?.id === item.id && styles.selectedSongText
+              ]}
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => {
+                  setSongToAdd(item);
+                  setIsAddToPlaylistModalVisible(true);
+                }}
+              >
+                <Text style={styles.buttonText}>Add</Text>
+              </TouchableOpacity>
+              {selectedPlaylist !== 'Default Playlist' && (
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => {
+                    handleRemoveSongFromPlaylist(item.id);
+                  }}
+                >
+                  <Text style={styles.buttonText}>Remove</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </TouchableOpacity>
+        )}
+        contentContainerStyle={styles.listContainer}
+      />
       <Modal
         visible={isCreatingPlaylist}
         animationType="slide"
@@ -445,48 +510,58 @@ export default function MusicScreen() {
           </View>
         </View>
       </Modal>
+      <Modal
+        visible={isAddToPlaylistModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setIsAddToPlaylistModalVisible(false);
+          setSongToAdd(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Add to Playlist</Text>
 
-      {/* Songs List */}
-      <FlatList
-        data={filteredSongs}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => playSong(item)}
-            style={[
-              styles.songItem,
-              selectedSong?.id === item.id && styles.selectedSongItem
-            ]}
-          >
-            <Ionicons
-              name={selectedSong?.id === item.id ? "musical-notes" : "musical-note"}
-              size={24}
-              color={selectedSong?.id === item.id ? "#4A90E2" : "#666"}
-            />
-            <Text
-              style={[
-                styles.songText,
-                selectedSong?.id === item.id && styles.selectedSongText
-              ]}
-              numberOfLines={1}
-            >
-              {item.title}
-            </Text>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>Add</Text>
-              </TouchableOpacity>
-              {selectedPlaylist !== 'Default Playlist' && (
-                <TouchableOpacity style={styles.button}>
-                  <Text style={styles.buttonText}>Remove</Text>
+            {Object.keys(playlists)
+              .filter((playlistName) => playlistName !== 'Default Playlist')
+              .map((playlistName) => (
+                <TouchableOpacity
+                  key={playlistName}
+                  style={[styles.playlistItem, { borderBottomWidth: 0 }]} // reuse styles
+                  onPress={() => {
+                    if (!songToAdd) return;
+
+                    // Avoid duplicates
+                    setPlaylists((prev) => ({
+                      ...prev,
+                      [playlistName]: prev[playlistName].includes(songToAdd.id)
+                        ? prev[playlistName]
+                        : [...prev[playlistName], songToAdd.id],
+                    }));
+
+                    setIsAddToPlaylistModalVisible(false);
+                    setSongToAdd(null);
+                  }}
+                >
+                  <Text style={styles.playlistItemText}>{playlistName}</Text>
                 </TouchableOpacity>
-              )}
-            </View>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.listContainer}
-      />
+              ))}
+
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: '#ccc', marginTop: 12 }]}
+              onPress={() => {
+                setIsAddToPlaylistModalVisible(false);
+                setSongToAdd(null);
+              }}
+            >
+              <Text style={styles.modalButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
+
   );
 }
 
