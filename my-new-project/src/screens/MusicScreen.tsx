@@ -255,6 +255,16 @@ export default function MusicScreen() {
 
     await playSong(nextSong);
   };
+  const handleDeletePlaylist = (playlistName: string) => {
+    const updatedPlaylists = { ...playlists };
+    delete updatedPlaylists[playlistName];
+    setPlaylists(updatedPlaylists);
+
+    // If you are on the deleted playlist, fallback to Default
+    if (selectedPlaylist === playlistName) {
+      setSelectedPlaylist('Default');
+    }
+  };
 
   const handleShuffle = () => {
     if (filteredSongs.length === 0) return;
@@ -385,16 +395,26 @@ export default function MusicScreen() {
         {dropdownVisible && (
           <View style={styles.playlistDropdown}>
             {Object.keys(playlists).map((playlist) => (
-              <TouchableOpacity
-                key={playlist}
-                style={styles.playlistItem}
-                onPress={() => {
-                  setSelectedPlaylist(playlist);
-                  setDropdownVisible(false);
-                }}
-              >
-                <Text style={styles.playlistItemText}>{playlist}</Text>
-              </TouchableOpacity>
+              <View key={playlist} style={styles.playlistItemRow}>
+                <TouchableOpacity
+                  style={styles.playlistItem}
+                  onPress={() => {
+                    setSelectedPlaylist(playlist);
+                    setDropdownVisible(false);
+                  }}
+                >
+                  <Text style={styles.playlistItemText}>{playlist}</Text>
+                </TouchableOpacity>
+
+                {playlist !== 'Default Playlist' && (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDeletePlaylist(playlist)}
+                  >
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             ))}
 
             <TouchableOpacity
@@ -408,6 +428,7 @@ export default function MusicScreen() {
             </TouchableOpacity>
           </View>
         )}
+
       </View>
 
 
@@ -626,6 +647,24 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  playlistItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  deleteButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: 'red',
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 12,
   },
 
   playlistDropdownContainer: {
